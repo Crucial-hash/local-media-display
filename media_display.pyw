@@ -46,13 +46,12 @@ async def get_media_info():
                 thumbnail = None
         info_dict = {
             "title": simplified_title,
-            "original_title": original_title,
             "artist": info.artist,
             "album": info.album_title,
             "thumbnail": thumbnail
         }
         return info_dict
-    return {"title": "None", "original_title": "None", "artist": "None", "album": "None", "thumbnail": None}
+    return {"title": "None", "artist": "None", "album": "None", "thumbnail": None}
 
 def get_media_info_sync():
     return asyncio.run(get_media_info())
@@ -149,22 +148,13 @@ body{
     max-width:90%;
     overflow-wrap:break-word
 }
-.original-title{
-    font-size:min(1.8vw,1rem);
-    opacity:0.6;
-    margin:0.5vh 0;
-    text-align:center;
-    max-width:90%;
-    overflow-wrap:break-word
-}
 @media (max-width:768px){
     :root {
         --album-size: 300px;  /* Smaller size for mobile */
     }
     .title{font-size:5vw}
     .artist,.album{font-size:4vw}
-    .original-title{font-size:3vw}
-}</style><script>function updateMedia(){fetch('/media-info').then(response=>response.json()).then(data=>{const albumArt=document.getElementById('album-art');const albumArtContainer=document.getElementById('album-art-container');if(data.thumbnail){albumArt.src='data:image/jpeg;base64,'+data.thumbnail;albumArtContainer.classList.remove('no-image')}else{albumArt.src='';albumArtContainer.classList.add('no-image')}document.getElementById('title').textContent=data.title;document.getElementById('artist').textContent=data.artist!=="None"?data.artist:"";document.getElementById('album').textContent=data.album!=="None"?data.album:"";const originalTitle=document.getElementById('original-title');if(data.title!==data.original_title&&data.title!=="None"){originalTitle.textContent=data.original_title;originalTitle.style.display='block'}else{originalTitle.style.display='none'}})}setInterval(updateMedia,1000);updateMedia();</script></head><body><div class="media-info"><div class="album-art" id="album-art-container"><img id="album-art" src="" alt="Album Art"></div><div class="text-info"><h2 class="title" id="title">-</h2><p class="original-title" id="original-title" style="display:none"></p><p class="artist" id="artist">-</p><p class="album" id="album">-</p></div></div></body></html>'''
+}</style><script>function updateMedia(){fetch('/media-info').then(response=>response.json()).then(data=>{const albumArt=document.getElementById('album-art');const albumArtContainer=document.getElementById('album-art-container');if(data.thumbnail){albumArt.src='data:image/jpeg;base64,'+data.thumbnail;albumArtContainer.classList.remove('no-image')}else{albumArt.src='';albumArtContainer.classList.add('no-image')}document.getElementById('title').textContent=data.title;document.getElementById('artist').textContent=data.artist!=="None"?data.artist:"";document.getElementById('album').textContent=data.album!=="None"?data.album:"";})}setInterval(updateMedia,1000);updateMedia();</script></head><body><div class="media-info"><div class="album-art" id="album-art-container"><img id="album-art" src="" alt="Album Art"></div><div class="text-info"><h2 class="title" id="title">-</h2><p class="artist" id="artist">-</p><p class="album" id="album">-</p></div></div></body></html>'''
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, use_reloader=False) 
+    app.run(host='0.0.0.0', port=5000, use_reloader=False)
