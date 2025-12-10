@@ -6,6 +6,10 @@ import base64
 import re
 
 app = Flask(__name__)
+_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(_loop)
+_session_manager = None
+_session = None
 
 def simplify_title(title):
     if not title:
@@ -26,14 +30,27 @@ def simplify_title(title):
     return simplified
 
 async def get_media_info():
-    sessions = await GlobalSystemMediaTransportControlsSessionManager.request_async()
-    current_session = sessions.get_current_session()
-    if current_session:
-        info = await current_session.try_get_media_properties_async()
+    global _session_manager, _session
+    if _session_manager is None:
+        try:
+            _session_manager = await GlobalSystemMediaTransportControlsSessionManager.request_async()
+        except Exception:
+            _session_manager = None
+    if _session_manager:
+        try:
+            current = _session_manager.get_current_session()
+            if current:
+                _session = current
+        except Exception:
+            _session = None
+    if _session:
+        info = await _session.try_get_media_properties_async()
         original_title = info.title
         simplified_title = simplify_title(original_title)
         thumbnail = None
         if info.thumbnail:
+            thumbnail_stream = None
+            reader = None
             try:
                 thumbnail_stream = await info.thumbnail.open_read_async()
                 buffer = Buffer(thumbnail_stream.size)
@@ -44,6 +61,11 @@ async def get_media_info():
                 thumbnail = base64.b64encode(bytes_array).decode()
             except:
                 thumbnail = None
+            finally:
+                if reader:
+                    reader.close()
+                if thumbnail_stream:
+                    thumbnail_stream.close()
         info_dict = {
             "title": simplified_title,
             "artist": info.artist,
@@ -54,7 +76,7 @@ async def get_media_info():
     return {"title": "None", "artist": "None", "album": "None", "thumbnail": None}
 
 def get_media_info_sync():
-    return asyncio.run(get_media_info())
+    return _loop.run_until_complete(get_media_info())
 
 @app.route('/media-info')
 def media_info():
@@ -154,7 +176,7 @@ body{
     }
     .title{font-size:5vw}
     .artist,.album{font-size:4vw}
-}</style><script>function updateMedia(){fetch('/media-info').then(response=>response.json()).then(data=>{const albumArt=document.getElementById('album-art');const albumArtContainer=document.getElementById('album-art-container');if(data.thumbnail){albumArt.src='data:image/jpeg;base64,'+data.thumbnail;albumArtContainer.classList.remove('no-image')}else{albumArt.src='';albumArtContainer.classList.add('no-image')}document.getElementById('title').textContent=data.title;document.getElementById('artist').textContent=data.artist!=="None"?data.artist:"";document.getElementById('album').textContent=data.album!=="None"?data.album:"";})}setInterval(updateMedia,1000);updateMedia();</script></head><body><div class="media-info"><div class="album-art" id="album-art-container"><img id="album-art" src="" alt="Album Art"></div><div class="text-info"><h2 class="title" id="title">-</h2><p class="artist" id="artist">-</p><p class="album" id="album">-</p></div></div></body></html>'''
+}</style><script>function updateMedia(){fetch('/media-info').then(response=>response.json()).then(data=>{const albumArt=document.getElementById('album-art');const albumArtContainer=document.getElementById('album-art-container');if(data.thumbnail){albumArt.src='data:image/jpeg;base64,'+data.thumbnail;albumArtContainer.classList.remove('no-image')}else{albumArt.src='';albumArtContainer.classList.add('no-image')}document.getElementById('title').textContent=data.title;document.getElementById('artist').textContent=data.artist!=="None"?data.artist:"";document.getElementById('album').textContent=data.album!=="None"?data.album:"";})}setInterval(updateMedia,2000);updateMedia();</script></head><body><div class="media-info"><div class="album-art" id="album-art-container"><img id="album-art" src="" alt="Album Art"></div><div class="text-info"><h2 class="title" id="title">-</h2><p class="artist" id="artist">-</p><p class="album" id="album">-</p></div></div></body></html>'''
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, use_reloader=False, threaded=False)
